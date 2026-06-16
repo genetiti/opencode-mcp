@@ -1,6 +1,6 @@
 # Getting Started
 
-Set up opencode-mcp in under 2 minutes.
+Set up this fork ([<your-username>/opencode-mcp](https://github.com/<your-username>/opencode-mcp)) from source. It is not published to npm — you build it locally and point your client at the compiled binary.
 
 ## Prerequisites
 
@@ -11,22 +11,33 @@ Set up opencode-mcp in under 2 minutes.
   - or `brew install sst/tap/opencode`
 - An **MCP-compatible client** (Claude Desktop, Claude Code, Cursor, Windsurf, etc.)
 
-## Step 1: Add to Your Client
+## Step 1: Clone, Build, and Add to Your Client
 
-**Claude Code:**
+This fork runs from source. Clone and build it once:
 
 ```bash
-claude mcp add opencode -- npx -y opencode-mcp
+git clone https://github.com/<your-username>/opencode-mcp.git
+cd opencode-mcp
+npm install
+npm run build
 ```
 
-**Claude Desktop / Cursor / Windsurf / Cline / Continue** — add to your MCP config file:
+Then register it, pointing at the absolute path to the built `dist/index.js`.
+
+**Claude Code** (user scope = available in all your projects):
+
+```bash
+claude mcp add --scope user opencode -- node "$(pwd)/dist/index.js"
+```
+
+**Claude Desktop / Cursor / Windsurf / Cline / Continue** — add to your MCP config file (replace the path with your absolute clone path):
 
 ```json
 {
   "mcpServers": {
     "opencode": {
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
     }
   }
 }
@@ -89,8 +100,8 @@ The OpenCode server has auth enabled. Add credentials:
 {
   "mcpServers": {
     "opencode": {
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"],
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"],
       "env": {
         "OPENCODE_SERVER_USERNAME": "myuser",
         "OPENCODE_SERVER_PASSWORD": "mypass"
@@ -103,7 +114,8 @@ The OpenCode server has auth enabled. Add credentials:
 ### Tools not showing up
 
 - Restart the client after editing the config
-- Check that `npx opencode-mcp` runs without errors in a terminal
+- Check that `node /absolute/path/to/opencode-mcp/dist/index.js` starts without errors in a terminal (it waits for stdin — press Ctrl+C to exit)
+- Make sure you ran `npm run build` and the path points at an existing `dist/index.js`
 - Make sure your MCP client supports tools
 
 ### Disable auto-start

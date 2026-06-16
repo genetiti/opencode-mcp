@@ -21,9 +21,22 @@ All environment variables are **optional**. You only need to set them if you've 
 - **Default provider/model** are optional. When set, tools that accept `providerID`/`modelID` will use these as fallbacks when not specified per-call. Both must be set together. Example: `OPENCODE_DEFAULT_PROVIDER=anthropic` + `OPENCODE_DEFAULT_MODEL=claude-sonnet-4-5`.
 - **Directory validation** — The `directory` parameter on all tools must be an absolute path to an existing directory. Relative paths, non-existent paths, and trailing slashes are handled automatically (resolved or rejected with a helpful error).
 
+## Build the fork first
+
+This is a source-run fork ([<your-username>/opencode-mcp](https://github.com/<your-username>/opencode-mcp)) with no npm package, so every config below points your client at the compiled `dist/index.js` rather than at `npx`. Build it once per machine:
+
+```bash
+git clone https://github.com/<your-username>/opencode-mcp.git
+cd opencode-mcp
+npm install
+npm run build
+```
+
+Note the absolute path to the build output (`<clone-dir>/dist/index.js`) — you'll substitute it for `/absolute/path/to/opencode-mcp/dist/index.js` in the examples. After any `git pull` or local edit, re-run `npm run build`.
+
 ## MCP Client Configurations
 
-Below are complete configuration examples for every supported MCP client. All examples assume the OpenCode server is running on the default `http://127.0.0.1:4096` with no auth.
+Below are complete configuration examples for every supported MCP client. All examples assume the OpenCode server is running on the default `http://127.0.0.1:4096` with no auth, and that you've built the fork as above.
 
 ### Claude Desktop
 
@@ -36,8 +49,8 @@ Below are complete configuration examples for every supported MCP client. All ex
 {
   "mcpServers": {
     "opencode": {
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
     }
   }
 }
@@ -46,14 +59,14 @@ Below are complete configuration examples for every supported MCP client. All ex
 ### Claude Code (CLI)
 
 ```bash
-# Add globally
-claude mcp add opencode -- npx -y opencode-mcp
+# Add at user scope (available in all your projects); run from your clone dir so $(pwd) resolves
+claude mcp add --scope user opencode -- node "$(pwd)/dist/index.js"
 
-# Add with custom env
-claude mcp add opencode --env OPENCODE_BASE_URL=http://192.168.1.10:4096 -- npx -y opencode-mcp
+# Or use an absolute path + custom env
+claude mcp add --scope user opencode --env OPENCODE_BASE_URL=http://192.168.1.10:4096 -- node /absolute/path/to/opencode-mcp/dist/index.js
 
 # Remove
-claude mcp remove opencode
+claude mcp remove opencode -s user
 ```
 
 ### Cursor
@@ -64,8 +77,8 @@ claude mcp remove opencode
 {
   "mcpServers": {
     "opencode": {
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
     }
   }
 }
@@ -79,8 +92,8 @@ claude mcp remove opencode
 {
   "mcpServers": {
     "opencode": {
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
     }
   }
 }
@@ -96,8 +109,8 @@ claude mcp remove opencode
     {
       "name": "opencode",
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
     }
   ]
 }
@@ -107,8 +120,8 @@ claude mcp remove opencode
 
 Cline manages MCP servers through its own settings UI. Add a new server with:
 
-- **Command:** `npx`
-- **Args:** `-y opencode-mcp`
+- **Command:** `node`
+- **Args:** `/absolute/path/to/opencode-mcp/dist/index.js`
 - **Transport:** stdio
 
 ### Continue
@@ -119,8 +132,8 @@ Cline manages MCP servers through its own settings UI. Add a new server with:
 {
   "mcpServers": {
     "opencode": {
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
     }
   }
 }
@@ -135,8 +148,8 @@ Cline manages MCP servers through its own settings UI. Add a new server with:
   "context_servers": {
     "opencode": {
       "command": {
-        "path": "npx",
-        "args": ["-y", "opencode-mcp"]
+        "path": "node",
+        "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
       }
     }
   }
@@ -153,8 +166,8 @@ Cline manages MCP servers through its own settings UI. Add a new server with:
     {
       "name": "opencode",
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"]
     }
   ]
 }
@@ -168,8 +181,8 @@ Add `env` to any config above. This is only needed if you've enabled auth on the
 {
   "mcpServers": {
     "opencode": {
-      "command": "npx",
-      "args": ["-y", "opencode-mcp"],
+      "command": "node",
+      "args": ["/absolute/path/to/opencode-mcp/dist/index.js"],
       "env": {
         "OPENCODE_BASE_URL": "http://127.0.0.1:4096",
         "OPENCODE_SERVER_USERNAME": "myuser",
@@ -180,24 +193,13 @@ Add `env` to any config above. This is only needed if you've enabled auth on the
 }
 ```
 
-### With global install (instead of npx)
+### Keeping the fork updated
 
-If you prefer a global install for faster startup:
+This fork runs the compiled `dist/`, so changes only take effect after a rebuild. After pulling updates (or editing the source), rebuild and restart your client:
 
 ```bash
-npm install -g opencode-mcp
-```
-
-Then use `opencode-mcp` directly in your config:
-
-```json
-{
-  "mcpServers": {
-    "opencode": {
-      "command": "opencode-mcp"
-    }
-  }
-}
+git -C /absolute/path/to/opencode-mcp pull
+npm --prefix /absolute/path/to/opencode-mcp run build
 ```
 
 ## Permissions (Headless Mode)
