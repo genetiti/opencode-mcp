@@ -103,6 +103,59 @@ opencode_review_changes({ "sessionId": "<auth-session-id>" })
 opencode_review_changes({ "sessionId": "<middleware-session-id>" })
 ```
 
+## Multi-Model Parallel Review
+
+Get independent opinions on the same code from multiple models simultaneously. Each call creates a fresh session (no `sessionId`) so model contexts never bleed into each other.
+
+**1. Fire the same prompt to several models at once** — each `opencode_fire` returns immediately:
+```json
+// Model A — Anthropic Claude
+opencode_fire({
+  "prompt": "Review the authentication module for security issues. Be specific about file names and line numbers.",
+  "providerID": "anthropic",
+  "modelID": "claude-opus-4-6",
+  "agent": "plan",
+  "title": "Security review — Claude"
+})
+
+// Model B — Kimi K2.7 Code via OpenRouter
+opencode_fire({
+  "prompt": "Review the authentication module for security issues. Be specific about file names and line numbers.",
+  "providerID": "openrouter",
+  "modelID": "moonshotai/kimi-k2.7-code",
+  "agent": "plan",
+  "title": "Security review — Kimi"
+})
+
+// Model C — a third model
+opencode_fire({
+  "prompt": "Review the authentication module for security issues. Be specific about file names and line numbers.",
+  "providerID": "openrouter",
+  "modelID": "google/gemini-2.5-pro",
+  "agent": "plan",
+  "title": "Security review — Gemini"
+})
+```
+Each returns a `sessionId`. No session shares context with another. The `providerID`/`modelID` pairs above are illustrative — enumerate exact model IDs for an authed provider with `opencode_provider_models({ "providerId": "openrouter" })`.
+
+**2. Poll until all are done** — `opencode_check` is cheap; call it every ~30 s per session:
+```json
+opencode_check({ "sessionId": "<claude-session-id>" })
+opencode_check({ "sessionId": "<kimi-session-id>" })
+opencode_check({ "sessionId": "<gemini-session-id>" })
+```
+`status: "idle"` means the model finished. `status: "running"` means keep polling.
+
+**3. Collect and compare results** — `opencode_conversation`:
+```json
+opencode_conversation({ "sessionId": "<claude-session-id>" })
+opencode_conversation({ "sessionId": "<kimi-session-id>" })
+opencode_conversation({ "sessionId": "<gemini-session-id>" })
+```
+Look for findings that appear in multiple responses — cross-model agreement is a strong signal that an issue is real.
+
+> **Tip:** Use `agent: "plan"` (read-only) for review tasks so no model accidentally edits files. Confirm with `opencode_review_changes` after — all three should show no changes.
+
 ## Get Project Context
 
 Understand a project you've never seen:
